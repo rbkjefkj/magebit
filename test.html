@@ -1,0 +1,201 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="UTF-8">
+	<style>
+	body {
+		font-family: Arial;
+		display: flex;
+		flex-direction: column;
+	}
+
+	td { padding: 10px; }
+
+	h2, td { text-align: center; }
+
+	td, th {
+		border: 1px solid black;
+	}
+
+	table { width: 100%; }
+
+	select { margin-left: 5px; }
+	label { font-size: 20px; }
+
+	#header {
+		margin: 0 30px 10px auto;
+		display: flex;
+		flex-direction: row;
+	}
+
+	form { margin-left: 20px; }
+
+	.filter-btn {
+		width: min-content;
+		min-width: 100px;
+		padding: 5px;
+		margin: 2px;
+	}
+
+	#filterer {
+		display: flex;
+		flex-wrap: wrap;
+	}
+
+	#s { margin-left: 20px; }
+
+	</style>
+</head>
+<body>
+	<h2>SUBMITTED EMAIL ADDRESSES</h2>
+
+	<div id="header">
+		<label for="headerr">SORT BY: </label>
+		<select id="myselect" onchange="sortBy(this.value)">
+	    	<option value="">💎🎀</option>
+	     	<option value="email">email</option>
+	     	<option value="created_at">date</option>
+	   	</select>
+			<!--had to get rid of form to avoid reloads upon hitting Enter-->
+		<div id="inputmom">
+			<input placeholder="Search..." id="s" onkeyup="handleEnter(event, this.value)">
+			<input type="button" value="🔎" name="submit" onclick="handleSearch(document.getElementById('s').value)">
+		</div>
+	</div>
+
+	<table id="table">
+		<tr>
+			<th>ID</th>
+	   		<th>EMAIL</th>
+	   		<th>CREATED AT</th>
+	   		<th>DOMAIN</th>
+			<th>DELETE</th>
+			<th>EXPORT</th>
+	 	</tr>
+	</table>
+	<h3>FILTER BY:</h3>
+	<div id="filterer"></div>
+<script>
+
+		function makeTable(res) {
+			//remove old table
+			let collection =document.getElementsByTagName('td');
+			let collection2 =document.getElementsByTagName('tr');
+			let arr = Array.from(collection);
+			let arr2 = Array.from(collection2);
+			arr2.shift();
+			let each;
+			for (each of arr) { each.remove(); }
+			for (each of arr2) { each.remove(); }
+
+			//build new table
+ 	   		let table = document.getElementById('table');
+ 	   		for (let i in res) {
+				let obj = res[i];
+ 	   			let tr = document.createElement('tr');
+ 	   			table.appendChild(tr);
+ 	   			for (const property in obj) {
+					//property = email, created_at, email_provider etc etc
+ 	   				let td = document.createElement('td');
+ 	   				td.textContent = obj[property];
+ 	   				tr.appendChild(td);
+ 	   			}
+
+ 				//i tried to write these as a separate function but scope issues
+ 				let tddelete = document.createElement('td');
+				tr.appendChild(tddelete);
+ 		   		let btn = document.createElement('input');
+ 		   		tddelete.appendChild(btn);
+ 		   		btn.value = 'DELETE';
+				btn.type = "button";
+ 		   		btn.classList.add('danger');
+ 		   		//btn.onclick = delEmail(`http://localhost/delete.php?id=${obj['id']}`);	 //this ran already upon render for some reason so had to add event listener instead
+				btn.addEventListener('click', event => {
+			      delEmail(`http://localhost/delete.php?id=${obj['id']}`);
+			    })
+
+
+ 				let tdexport = document.createElement('td');
+ 		   		let checkbox = document.createElement('input');
+ 		   		tdexport.appendChild(checkbox);
+ 		   		checkbox.type = 'checkbox';
+ 		   		checkbox.id = `${obj['id']}`;
+ 				tr.appendChild(tdexport);
+
+ 	   		}
+			makeFilter();
+ 	   	}
+
+function makeFilter() {
+		//remove old -___-
+		let arr = Array.from(document.getElementsByClassName('filter-btn'));
+		for (let each of arr) { each.remove(); }
+
+		const xmlhttp = new XMLHttpRequest();
+		xmlhttp.open("GET", 'http://localhost/database.php?distinct');
+		xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+		xmlhttp.send();
+		xmlhttp.onload = function() {
+			let arr = JSON.parse(xmlhttp.response);
+			for(let i in arr) {
+				let obj = arr[i];
+				let b = document.createElement('input');
+				b.type = 'button';
+				b.value = obj['email_provider'];
+				b.classList.add('filter-btn')
+				document.getElementById('filterer').appendChild(b);
+				b.addEventListener('click', event => {
+					getAll(`http://localhost/database.php?filter=${obj['email_provider']}`);
+				})
+			}
+		}
+}
+
+function getAll(url) {
+	const xmlhttp = new XMLHttpRequest();
+	xmlhttp.open("GET", url);
+	xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+	xmlhttp.send(); //OMG IT WAS ERRORING OUT WHEN x=email WAS INSIDE send()
+	xmlhttp.onload = function() { //doesn't work wo the function() D: i guess you need a ~callback~
+		makeTable(JSON.parse(xmlhttp.response));
+	}
+}
+
+function delEmail(url) {
+	const xmlhttp = new XMLHttpRequest();
+	xmlhttp.open("GET", url);
+	xmlhttp.send();
+	xmlhttp.onload = function() {
+		if (xmlhttp.response === 'done!') { getAll('http://localhost/database.php?all'); }
+		else console.log("couldn't delete");
+	}
+}
+
+function sortBy(value) {
+	getAll(`http://localhost/database.php?sortby=${value}`);
+}
+
+function handleEnter(event, val) {
+  	if (event.keyCode === 13) { handleSearch(val) }
+}
+
+function handleSearch(q) {
+	const xmlhttp = new XMLHttpRequest();
+	xmlhttp.open("GET", `http://localhost/database.php?search=${q}`);
+	xmlhttp.send();
+	xmlhttp.onload = function() {
+		if (xmlhttp.response === 'No results found') {
+			document.getElementById('s').value = "No results found"
+		} else {
+			makeTable(JSON.parse(xmlhttp.response));
+		}
+	}
+}
+
+
+window.onload = getAll('http://localhost/database.php?all');
+//window.onload = request all distinct domains, make button for each
+
+	    </script>
+	</body>
+</html>
