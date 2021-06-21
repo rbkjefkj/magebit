@@ -17,4 +17,4 @@ Hi, this is not 100% done but I'm extremely sick of making it. I hope it proves 
 * PHP email validation is probably unfinished? Or at least untested
 * Maybe test.html has too much JS and too little PHP?! Really only my DB queries use PHP... But I was informed over at StackOverflow that that's how it's supposed to work.
 
-I could obviously fix all these with more time but as I said I'm extremely tired of writing this app.
+I could obviously fix all these with more time but as I said I'm extremely tired of writing this app. Let me know how you feel about it. 🧐
